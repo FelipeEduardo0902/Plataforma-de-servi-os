@@ -1,9 +1,7 @@
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
-const db = require('../config/db');
-
 exports.login = async (req, res) => {
   const { email, senha } = req.body;
+
+  console.log("🔐 Login solicitado com:", email, senha);
 
   try {
     const pool = await db.connectToDatabase();
@@ -15,11 +13,18 @@ exports.login = async (req, res) => {
     const usuario = result.recordset[0];
 
     if (!usuario) {
+      console.log("❌ Usuário não encontrado");
       return res.status(401).json({ erro: 'Usuário não encontrado.' });
     }
 
+    console.log("✅ Usuário encontrado:", usuario.email);
+    console.log("🧪 Senha digitada:", senha);
+    console.log("🔐 Hash no banco:", usuario.senha);
+
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
+
     if (!senhaValida) {
+      console.log("❌ Senha inválida");
       return res.status(401).json({ erro: 'Senha incorreta.' });
     }
 
@@ -34,7 +39,9 @@ exports.login = async (req, res) => {
       token,
       tipo: usuario.tipo,
     });
+
   } catch (error) {
+    console.error("❌ Erro interno no login:", error);
     res.status(500).json({ erro: 'Erro ao fazer login.', detalhe: error.message });
   }
 };
