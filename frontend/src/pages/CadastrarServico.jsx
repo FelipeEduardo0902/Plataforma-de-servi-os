@@ -5,7 +5,6 @@ import {
   Button,
   Typography,
   Paper,
-  Box,
   Alert,
   Grid,
   InputLabel,
@@ -30,8 +29,22 @@ export default function CadastrarServico() {
 
   const navigate = useNavigate();
 
+  const formatarTelefone = (valor) => {
+    const numeros = valor.replace(/\D/g, "").slice(0, 11);
+    if (numeros.length <= 2) return `(${numeros}`;
+    if (numeros.length <= 7)
+      return `(${numeros.slice(0, 2)}) ${numeros.slice(2)}`;
+    return `(${numeros.slice(0, 2)}) ${numeros.slice(2, 7)}-${numeros.slice(7)}`;
+  };
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    if (name === "contato") {
+      setFormData({ ...formData, contato: formatarTelefone(value) });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const handleFileChange = (e) => {
@@ -51,7 +64,7 @@ export default function CadastrarServico() {
 
     const telefoneLimpo = formData.contato.replace(/\D/g, "");
     if (!/^\d{11}$/.test(telefoneLimpo)) {
-      setErro("Telefone inválido. Informe 11 dígitos (ex: 51991234567).");
+      setErro("Telefone inválido. Informe 11 dígitos (ex: (51) 99123-4567).");
       return;
     }
 
@@ -136,13 +149,13 @@ export default function CadastrarServico() {
 
             <TextField
               fullWidth
-              label="Contato (somente números)"
+              label="Contato"
               name="contato"
               value={formData.contato}
               onChange={handleChange}
               margin="normal"
               required
-              helperText="Ex: 51991234567"
+              helperText="Formato: (51) 99999-9999"
             />
 
             <Button variant="outlined" component="label" sx={{ mt: 2 }} fullWidth>
