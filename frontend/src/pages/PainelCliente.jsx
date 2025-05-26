@@ -12,17 +12,19 @@ import {
   DialogActions,
   Button
 } from "@mui/material";
+import { buscarServicosPublicos } from "../api";
 
 export default function PainelCliente() {
   const [servicos, setServicos] = useState([]);
   const [servicoSelecionado, setServicoSelecionado] = useState(null);
   const [open, setOpen] = useState(false);
 
+  const BASE_URL = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     const fetchServicos = async () => {
       try {
-        const response = await fetch("http://localhost:3000/servicos");
-        const data = await response.json();
+        const data = await buscarServicosPublicos();
         setServicos(data);
       } catch (error) {
         console.error("Erro ao carregar serviços:", error);
@@ -89,7 +91,7 @@ export default function PainelCliente() {
                     <CardMedia
                       component="img"
                       height="160"
-                      image={`http://localhost:3000/uploads/${servico.imagem}`}
+                      image={`${BASE_URL}/uploads/${servico.imagem}`}
                       alt={servico.titulo}
                     />
                   )}
@@ -111,7 +113,6 @@ export default function PainelCliente() {
         </Paper>
       </Grid>
 
-      {/* Modal */}
       <Dialog
         open={open}
         onClose={(event, reason) => {
@@ -125,7 +126,7 @@ export default function PainelCliente() {
         <DialogContent>
           {servicoSelecionado?.imagem && (
             <img
-              src={`http://localhost:3000/uploads/${servicoSelecionado.imagem}`}
+              src={`${BASE_URL}/uploads/${servicoSelecionado.imagem}`}
               alt={servicoSelecionado.titulo}
               style={{ width: "100%", borderRadius: "8px", marginBottom: "1rem" }}
             />

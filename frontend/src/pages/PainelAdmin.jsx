@@ -15,6 +15,11 @@ import {
   TextField,
   Alert,
 } from "@mui/material";
+import {
+  listarServicos,
+  editarServico,
+  excluirServico
+} from "../api";
 
 export default function PainelAdmin() {
   const [servicos, setServicos] = useState([]);
@@ -25,10 +30,7 @@ export default function PainelAdmin() {
   const carregarServicos = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:3000/servicos", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await response.json();
+      const data = await listarServicos(token);
       setServicos(data);
     } catch (error) {
       console.error("Erro ao carregar serviços:", error);
@@ -52,17 +54,7 @@ export default function PainelAdmin() {
   const handleEditar = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:3000/servicos/${servicoSelecionado.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(servicoSelecionado),
-      });
-
-      if (!response.ok) throw new Error("Erro ao atualizar serviço");
-
+      await editarServico(servicoSelecionado.id, servicoSelecionado, token);
       setMensagem("Serviço atualizado com sucesso!");
       carregarServicos();
       fecharModal();
@@ -76,18 +68,14 @@ export default function PainelAdmin() {
 
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`http://localhost:3000/servicos/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) throw new Error("Erro ao excluir serviço");
-
+      await excluirServico(id, token);
       carregarServicos();
     } catch (err) {
       alert("Erro: " + err.message);
     }
   };
+
+  const BASE_URL = import.meta.env.VITE_API_URL;
 
   return (
     <Container sx={{ py: 5 }}>
@@ -107,7 +95,7 @@ export default function PainelAdmin() {
                   <CardMedia
                     component="img"
                     height="160"
-                    image={`http://localhost:3000/uploads/${servico.imagem}`}
+                    image={`${BASE_URL}/uploads/${servico.imagem}`}
                     alt={servico.titulo}
                   />
                 )}
@@ -152,7 +140,6 @@ export default function PainelAdmin() {
         </Grid>
       </Paper>
 
-      {/* Modal de Edição */}
       <Dialog open={!!servicoSelecionado} onClose={fecharModal} fullWidth>
         <DialogTitle>Editar Serviço</DialogTitle>
         <DialogContent>

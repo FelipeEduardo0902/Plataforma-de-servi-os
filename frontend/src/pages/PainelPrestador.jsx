@@ -9,21 +9,19 @@ import {
   CardMedia
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { listarServicosComToken } from "../api";
 
 export default function PainelPrestador() {
   const navigate = useNavigate();
   const [servicos, setServicos] = useState([]);
 
+  const BASE_URL = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     const fetchServicos = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch("http://localhost:3000/servicos", {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        const data = await response.json();
+        const data = await listarServicosComToken(token);
         setServicos(data);
       } catch (error) {
         console.error("Erro ao carregar serviços:", error);
@@ -72,7 +70,7 @@ export default function PainelPrestador() {
                     <CardMedia
                       component="img"
                       height="160"
-                      image={`http://localhost:3000/uploads/${servico.imagem}`}
+                      image={`${BASE_URL}/uploads/${servico.imagem}`}
                       alt={servico.titulo}
                     />
                   )}

@@ -14,6 +14,7 @@ import {
   FormControl
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { cadastrarServico } from "../api";
 
 export default function CadastrarServico() {
   const [formData, setFormData] = useState({
@@ -21,9 +22,9 @@ export default function CadastrarServico() {
     descricao: "",
     categoria: "",
     cidade: "",
-    contato: ""
+    contato: "",
+    imagem: null
   });
-  const [imagem, setImagem] = useState(null);
   const [mensagem, setMensagem] = useState("");
   const [erro, setErro] = useState("");
 
@@ -34,7 +35,7 @@ export default function CadastrarServico() {
   };
 
   const handleFileChange = (e) => {
-    setImagem(e.target.files[0]);
+    setFormData({ ...formData, imagem: e.target.files[0] });
   };
 
   const handleSubmit = async (e) => {
@@ -48,7 +49,6 @@ export default function CadastrarServico() {
       return;
     }
 
-    // Validação do telefone (11 dígitos numéricos)
     const telefoneLimpo = formData.contato.replace(/\D/g, "");
     if (!/^\d{11}$/.test(telefoneLimpo)) {
       setErro("Telefone inválido. Informe 11 dígitos (ex: 51991234567).");
@@ -56,25 +56,16 @@ export default function CadastrarServico() {
     }
 
     try {
-      const data = new FormData();
-      Object.entries(formData).forEach(([key, value]) => data.append(key, value));
-      if (imagem) data.append("imagem", imagem);
-
-      const response = await fetch("http://localhost:3000/servicos", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        body: data
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) throw new Error(result.erro || "Erro ao cadastrar serviço.");
-
+      const result = await cadastrarServico(formData, token);
       setMensagem("Serviço cadastrado com sucesso!");
-      setFormData({ titulo: "", descricao: "", categoria: "", cidade: "", contato: "" });
-      setImagem(null);
+      setFormData({
+        titulo: "",
+        descricao: "",
+        categoria: "",
+        cidade: "",
+        contato: "",
+        imagem: null
+      });
 
       setTimeout(() => {
         navigate("/prestador/dashboard");

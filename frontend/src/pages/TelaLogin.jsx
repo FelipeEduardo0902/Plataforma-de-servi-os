@@ -16,13 +16,14 @@ import {
   FormControl
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { realizarLogin, cadastrarUsuario } from "../api";
 
 export default function TelaLogin() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
 
-  const [open, setOpen] = useState(false); // modal
+  const [open, setOpen] = useState(false);
   const [cadastro, setCadastro] = useState({
     nome: "",
     email: "",
@@ -33,19 +34,10 @@ export default function TelaLogin() {
 
   const navigate = useNavigate();
 
-  const realizarLogin = async () => {
+  const handleLogin = async () => {
     setErro("");
     try {
-      const response = await fetch("http://localhost:3000/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, senha }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.erro || "Erro ao fazer login");
-
+      const data = await realizarLogin(email, senha);
       localStorage.setItem("token", data.token);
       localStorage.setItem("tipoUsuario", data.tipo);
 
@@ -60,16 +52,7 @@ export default function TelaLogin() {
   const handleCadastro = async () => {
     setMensagemCadastro("");
     try {
-      const response = await fetch("http://localhost:3000/usuarios", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(cadastro)
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.erro || "Erro ao cadastrar usuário");
-
+      await cadastrarUsuario(cadastro);
       setMensagemCadastro("Usuário cadastrado com sucesso!");
       setTimeout(() => {
         setOpen(false);
@@ -126,7 +109,7 @@ export default function TelaLogin() {
               color="primary"
               fullWidth
               sx={{ mt: 3, fontWeight: 600 }}
-              onClick={realizarLogin}
+              onClick={handleLogin}
             >
               Entrar
             </Button>
@@ -148,7 +131,6 @@ export default function TelaLogin() {
         <DialogContent>
           <TextField
             label="Nome"
-            name="nome"
             fullWidth
             margin="dense"
             value={cadastro.nome}
@@ -156,7 +138,6 @@ export default function TelaLogin() {
           />
           <TextField
             label="Email"
-            name="email"
             type="email"
             fullWidth
             margin="dense"
@@ -165,7 +146,6 @@ export default function TelaLogin() {
           />
           <TextField
             label="Senha"
-            name="senha"
             type="password"
             fullWidth
             margin="dense"
