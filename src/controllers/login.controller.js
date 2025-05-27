@@ -21,9 +21,6 @@ exports.login = async (req, res) => {
       return res.status(401).json({ erro: 'Usuário não encontrado.' });
     }
 
-    console.log("✅ Usuário encontrado:", usuario.email);
-    console.log("🧪 Senha digitada:", senha);
-    console.log("🔐 Hash no banco:", usuario.senha);
 
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
 

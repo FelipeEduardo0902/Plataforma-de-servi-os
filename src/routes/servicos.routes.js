@@ -1,25 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const path = require('path');
-
 const servicoController = require('../controllers/servico.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const verificarTipo = require('../middlewares/verificarTipo');
+const autorizacaoServico = require('../middlewares/autorizacaoServico'); // Middleware que verifica se é dono/admin
 
-// Configuração do upload
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    const nomeArquivo = Date.now() + '-' + file.originalname;
-    cb(null, nomeArquivo);
-  }
+  destination: (req, file, cb) => cb(null, 'uploads/'),
+  filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname),
 });
 const upload = multer({ storage });
 
-// Rota para criar serviço
+// Criar serviço com upload
 router.post(
   '/',
   authMiddleware,
@@ -28,22 +21,31 @@ router.post(
   servicoController.cadastrarServico
 );
 
-// Rota para listar todos os serviços
+// Listar todos os serviços (público)
 router.get('/', servicoController.listarServicos);
 
-// 🔄 Rota para atualizar um serviço (somente admin ou dono pode atualizar, se quiser proteger)
+// Listar serviços do prestador logado
+router.get(
+  '/meus-servicos',
+  authMiddleware,
+  verificarTipo(['prestador']),
+  servicoController.listarServicosPrestador
+);
+
+// Atualizar serviço (com upload opcional)
 router.put(
   '/:id',
   authMiddleware,
-  verificarTipo(['admin', 'prestador']), // ajuste conforme as regras
+  autorizacaoServico, // Verifica dono/admin
+  upload.single('imagem'), // Pode atualizar imagem
   servicoController.atualizarServico
 );
 
-// ❌ Rota para excluir um serviço
+// Excluir serviço
 router.delete(
   '/:id',
   authMiddleware,
-  verificarTipo(['admin']), // apenas admin pode excluir
+  autorizacaoServico, // Verifica dono/admin
   servicoController.excluirServico
 );
 

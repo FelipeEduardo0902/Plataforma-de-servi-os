@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Container,
   TextField,
@@ -10,10 +10,12 @@ import {
   InputLabel,
   MenuItem,
   Select,
-  FormControl
+  FormControl,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { cadastrarServico } from "../api";
+
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 export default function CadastrarServico() {
   const [formData, setFormData] = useState({
@@ -22,13 +24,28 @@ export default function CadastrarServico() {
     categoria: "",
     cidade: "",
     contato: "",
-    imagem: null
+    imagem: null,
   });
   const [mensagem, setMensagem] = useState("");
   const [erro, setErro] = useState("");
-
+  const [categorias, setCategorias] = useState([]);
+  const [preview, setPreview] = useState(null); // preview da imagem
   const navigate = useNavigate();
 
+  useEffect(() => {
+    async function fetchCategorias() {
+      try {
+        const response = await fetch(`${BASE_URL}/categorias`);
+        const data = await response.json();
+        setCategorias(data);
+      } catch {
+        setCategorias([]);
+      }
+    }
+    fetchCategorias();
+  }, []);
+
+  // Formata o telefone para exibição
   const formatarTelefone = (valor) => {
     const numeros = valor.replace(/\D/g, "").slice(0, 11);
     if (numeros.length <= 2) return `(${numeros}`;
@@ -39,7 +56,6 @@ export default function CadastrarServico() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     if (name === "contato") {
       setFormData({ ...formData, contato: formatarTelefone(value) });
     } else {
@@ -48,7 +64,14 @@ export default function CadastrarServico() {
   };
 
   const handleFileChange = (e) => {
-    setFormData({ ...formData, imagem: e.target.files[0] });
+    const file = e.target.files[0];
+    setFormData({ ...formData, imagem: file });
+
+    if (file) {
+      setPreview(URL.createObjectURL(file));
+    } else {
+      setPreview(null);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -69,7 +92,7 @@ export default function CadastrarServico() {
     }
 
     try {
-      const result = await cadastrarServico(formData, token);
+      await cadastrarServico(formData, token);
       setMensagem("Serviço cadastrado com sucesso!");
       setFormData({
         titulo: "",
@@ -77,9 +100,9 @@ export default function CadastrarServico() {
         categoria: "",
         cidade: "",
         contato: "",
-        imagem: null
+        imagem: null,
       });
-
+      setPreview(null);
       setTimeout(() => {
         navigate("/prestador/dashboard");
       }, 1500);
@@ -129,11 +152,19 @@ export default function CadastrarServico() {
                 name="categoria"
                 value={formData.categoria}
                 onChange={handleChange}
+                label="Categoria"
               >
-                <MenuItem value="Pintura">Pintura</MenuItem>
-                <MenuItem value="Elétrica">Elétrica</MenuItem>
-                <MenuItem value="Hidráulica">Hidráulica</MenuItem>
-                <MenuItem value="Jardinagem">Jardinagem</MenuItem>
+                {categorias.length === 0 ? (
+                  <MenuItem value="">
+                    Nenhuma categoria cadastrada
+                  </MenuItem>
+                ) : (
+                  categorias.map((cat) => (
+                    <MenuItem key={cat.id || cat.nome} value={cat.nome}>
+                      {cat.nome}
+                    </MenuItem>
+                  ))
+                )}
               </Select>
             </FormControl>
 
@@ -160,16 +191,49 @@ export default function CadastrarServico() {
 
             <Button variant="outlined" component="label" sx={{ mt: 2 }} fullWidth>
               Escolher imagem (opcional)
-              <input type="file" hidden onChange={handleFileChange} />
+              <input
+                type="file"
+                hidden
+                onChange={handleFileChange}
+                accept="image/*"
+              />
             </Button>
 
-            <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 3, fontWeight: 600 }}>
+            {preview && (
+              <img
+                src={preview}
+                alt="Pré-visualização"
+                style={{
+                  marginTop: 20,
+                  maxWidth: "100%",
+                  maxHeight: 240,
+                  borderRadius: 8,
+                  boxShadow: "0 0 8px #bbb",
+                }}
+              />
+            )}
+
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              fullWidth
+              sx={{ mt: 3, fontWeight: 600 }}
+            >
               Cadastrar Serviço
             </Button>
           </form>
 
-          {mensagem && <Alert severity="success" sx={{ mt: 2 }}>{mensagem}</Alert>}
-          {erro && <Alert severity="error" sx={{ mt: 2 }}>{erro}</Alert>}
+          {mensagem && (
+            <Alert severity="success" sx={{ mt: 2 }}>
+              {mensagem}
+            </Alert>
+          )}
+          {erro && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {erro}
+            </Alert>
+          )}
         </Paper>
       </Grid>
     </Grid>

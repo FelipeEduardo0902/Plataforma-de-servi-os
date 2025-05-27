@@ -1,6 +1,6 @@
 const db = require("../config/db");
 
-// Função para formatar o número de telefone no padrão (XX) X XXXX-XXXX
+// Função para formatar telefone no padrão (XX) X XXXX-XXXX
 function formatarTelefone(telefone) {
   return telefone.replace(/^(\d{2})(\d{1})(\d{4})(\d{4})$/, "($1) $2 $3-$4");
 }
@@ -13,17 +13,19 @@ module.exports = {
     cidade,
     contato,
     imagem,
-    prestador_id
+    prestador_id,
+    is_categoria = 0 // padrão é serviço
   }) => {
     const pool = await db.connectToDatabase();
 
-    const telefoneLimpo = contato ? contato.replace(/\D/g, "") : "";
-
-    if (!/^\d{11}$/.test(telefoneLimpo)) {
-      throw new Error("Telefone inválido. Informe 11 dígitos (DDD + número).");
+    let telefoneFormatado = contato;
+    if (contato) {
+      const telefoneLimpo = contato.replace(/\D/g, "");
+      if (!/^\d{11}$/.test(telefoneLimpo)) {
+        throw new Error("Telefone inválido. Informe 11 dígitos (DDD + número).");
+      }
+      telefoneFormatado = formatarTelefone(telefoneLimpo);
     }
-
-    const telefoneFormatado = formatarTelefone(telefoneLimpo);
 
     await pool.request()
       .input("titulo", titulo)
@@ -33,46 +35,63 @@ module.exports = {
       .input("contato", telefoneFormatado)
       .input("imagem", imagem)
       .input("prestador_id", prestador_id)
+      .input("is_categoria", is_categoria)
       .query(`
-        INSERT INTO Servicos (titulo, descricao, categoria, cidade, contato, imagem, prestador_id)
-        VALUES (@titulo, @descricao, @categoria, @cidade, @contato, @imagem, @prestador_id)
+        INSERT INTO Servicos (titulo, descricao, categoria, cidade, contato, imagem, prestador_id, is_categoria)
+        VALUES (@titulo, @descricao, @categoria, @cidade, @contato, @imagem, @prestador_id, @is_categoria)
       `);
   },
 
-  buscarServicos: async (cidade, categoria) => {
+  listarServicos: async () => {
     const pool = await db.connectToDatabase();
-    let query = 'SELECT * FROM Servicos WHERE 1=1';
-    const request = pool.request();
-
-    if (cidade) {
-      query += ' AND cidade = @cidade';
-      request.input('cidade', cidade);
-    }
-
-    if (categoria) {
-      query += ' AND categoria = @categoria';
-      request.input('categoria', categoria);
-    }
-
-    const result = await request.query(query);
+    const result = await pool.request()
+      .query('SELECT * FROM Servicos WHERE is_categoria = 0');
     return result.recordset;
   },
 
-  atualizarServico: async (id, { titulo, descricao, categoria, cidade, contato }) => {
+  listarServicosPorPrestador: async (prestador_id) => {
     const pool = await db.connectToDatabase();
-    await pool.request()
+    const result = await pool.request()
+      .input('prestador_id', prestador_id)
+      .query('SELECT * FROM Servicos WHERE prestador_id = @prestador_id AND is_categoria = 0');
+    return result.recordset;
+  },
+
+  atualizarServico: async (id, { titulo, descricao, categoria, cidade, contato, imagem }) => {
+    const pool = await db.connectToDatabase();
+
+    let telefoneFormatado = contato;
+    if (contato) {
+      const telefoneLimpo = contato.replace(/\D/g, "");
+      if (!/^\d{11}$/.test(telefoneLimpo)) {
+        throw new Error("Telefone inválido. Informe 11 dígitos (DDD + número).");
+      }
+      telefoneFormatado = formatarTelefone(telefoneLimpo);
+    }
+
+    let query = `
+      UPDATE Servicos
+      SET titulo = @titulo, descricao = @descricao, categoria = @categoria,
+          cidade = @cidade, contato = @contato
+    `;
+    if (imagem) {
+      query += `, imagem = @imagem`;
+    }
+    query += ` WHERE id = @id`;
+
+    const request = pool.request()
       .input('id', id)
       .input('titulo', titulo)
       .input('descricao', descricao)
       .input('categoria', categoria)
       .input('cidade', cidade)
-      .input('contato', contato)
-      .query(`
-        UPDATE Servicos
-        SET titulo = @titulo, descricao = @descricao, categoria = @categoria,
-            cidade = @cidade, contato = @contato
-        WHERE id = @id
-      `);
+      .input('contato', telefoneFormatado);
+
+    if (imagem) {
+      request.input('imagem', imagem);
+    }
+
+    await request.query(query);
   },
 
   excluirServico: async (id) => {
