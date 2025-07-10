@@ -1,0 +1,44 @@
+@startuml
+skinparam backgroundColor white
+skinparam rectangle {
+    BackgroundColor #ddeeff
+    BorderColor #003366
+    FontSize 13
+}
+skinparam ArrowColor Black
+
+actor "Usuário Visitante" as Visitante
+actor "Prestador de Serviços" as Prestador
+actor "Administrador do Sistema" as Admin
+
+rectangle "<b>Sistema:</b>\nDivulgação de Serviços" {
+
+    ' Visitante
+    rectangle "<b>Use Case:</b>\nVisualizar Serviços\n[Consultar serviços disponíveis]" as Visualizar
+    rectangle "<b>Use Case:</b>\nPesquisar Serviços\n[Buscar por filtros]" as Pesquisar
+    rectangle "<b>Use Case:</b>\nCadastrar como Prestador\n[Novo cadastro]" as Cadastrar
+
+    ' Compartilhado
+    rectangle "<b>Use Case:</b>\nLogin no Sistema\n[Autenticação]" as Login
+
+    ' Prestador
+    rectangle "<b>Use Case:</b>\nGerenciar Serviços\n[Criação e edição]" as Gerenciar
+
+    ' Admin
+    rectangle "<b>Use Case:</b>\nAprovar ou Rejeitar Serviços\n[Moderação]" as Moderar
+    rectangle "<b>Use Case:</b>\nGerenciar Prestadores\n[Gestão de perfis]" as Gestao
+}
+
+' Posicionamento lógico para melhor compactação visual
+Visitante -down-> Visualizar
+Visitante -down-> Pesquisar
+Visitante -down-> Cadastrar
+Visitante -down-> Login
+
+Prestador -down-> Gerenciar
+Prestador -down-> Login
+
+Admin -down-> Moderar
+Admin -down-> Gestao
+Admin -down-> Login
+@enduml

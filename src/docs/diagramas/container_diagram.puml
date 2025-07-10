@@ -1,0 +1,27 @@
+@startuml
+skinparam backgroundColor white
+skinparam rectangle {
+    BackgroundColor #ddeeff
+    BorderColor #003366
+    FontSize 13
+}
+skinparam ArrowColor Black
+
+actor "Usuário Final" as Usuario
+
+rectangle "<<sistema>> Sistema de Divulgação de Serviços" as Sistema {
+
+    rectangle "<<container>> Frontend\n" as Frontend
+    rectangle "<<container>> Backend API\n[Serviços e Lógica de Negócio - Node.js ]" as API
+    rectangle "<<container>> Autenticação\n[Gerenciamento de Acesso - JWT ou OAuth2]" as Auth
+    rectangle "<<container>> Banco de Dados\n[Azure SQL - Armazenamento principal]" as DB
+    rectangle "<<container>> Armazenamento de Imagens\n[Azure Blob Storage]" as Storage
+}
+
+Usuario -down-> Frontend : Navegador
+Frontend -down-> API : Requisições REST
+Frontend -down-> Auth : Login / Autenticação
+
+API -down-> DB : Acesso a dados
+API -down-> Storage : Upload / Download
+Auth -down-> DB : Validação de Credenciais

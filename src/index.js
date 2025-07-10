@@ -4,6 +4,7 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const { connectToDatabase } = require('./config/db');
+const setupSwagger = require('./swagger');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,11 +28,13 @@ const loginRoutes = require('./routes/login.routes');
 const servicoRoutes = require('./routes/servicos.routes');
 const categoriaRoutes = require('./routes/categorias.routes');
 
-// Usar as rotas
 app.use('/usuarios', usuarioRoutes);
 app.use('/login', loginRoutes);
 app.use('/servicos', servicoRoutes);
 app.use('/categorias', categoriaRoutes);
+
+// Configuração do Swagger
+setupSwagger(app);
 
 // Rota de teste
 app.get('/', async (req, res) => {

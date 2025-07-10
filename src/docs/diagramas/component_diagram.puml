@@ -1,0 +1,29 @@
+@startuml
+left to right direction
+skinparam backgroundColor white
+skinparam rectangle {
+    BackgroundColor #ddeeff
+    BorderColor #003366
+    FontSize 13
+}
+skinparam ArrowColor Black
+
+rectangle "<<sistema>> Sistema de Divulgação de Serviços" as Sistema {
+
+    rectangle "<<component>> Frontend\n" as Frontend
+    rectangle "<<component>> API de Serviços\n[Exposição de endpoints e regras de negócio]" as API
+    rectangle "<<component>> Módulo de Autenticação\n[Gerenciamento de login e tokens]" as Auth
+    rectangle "<<component>> Módulo Administrativo\n[Moderação e gestão de serviços]" as Admin
+    rectangle "<<component>> Banco de Dados\n[Armazenamento estruturado de dados]" as DB
+    rectangle "<<component>> Armazenamento de Imagens\n[Upload e acesso a arquivos]" as Storage
+}
+
+Frontend --> API : Consome API REST
+Frontend --> Auth : Autenticação
+
+API --> DB : Persistência de Dados
+API --> Storage : Upload / Download
+
+Auth --> DB : Gerencia Credenciais
+Admin --> DB : Moderação e Gestão
+@enduml
