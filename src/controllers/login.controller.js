@@ -9,18 +9,16 @@ exports.login = async (req, res) => {
 
   try {
     const pool = await db.connectToDatabase();
-    const result = await pool
-      .request()
-      .input('email', email)
-      .query('SELECT * FROM Usuarios WHERE email = @email');
+    
+    // MySQL usa ? para parâmetros
+    const [rows] = await pool.query('SELECT * FROM Usuarios WHERE email = ?', [email]);
 
-    const usuario = result.recordset[0];
+    const usuario = rows[0];
 
     if (!usuario) {
       console.log("❌ Usuário não encontrado");
       return res.status(401).json({ erro: 'Usuário não encontrado.' });
     }
-
 
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
 

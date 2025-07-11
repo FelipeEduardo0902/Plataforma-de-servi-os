@@ -13,15 +13,12 @@ exports.cadastrarUsuario = async (req, res) => {
     const senhaCriptografada = await bcrypt.hash(senha, 10);
 
     const pool = await db.connectToDatabase();
-    await pool.request()
-      .input('nome', nome)
-      .input('email', email)
-      .input('senha', senhaCriptografada)
-      .input('tipo', tipo)
-      .query(`
-        INSERT INTO Usuarios (nome, email, senha, tipo)
-        VALUES (@nome, @email, @senha, @tipo)
-      `);
+    const query = `
+      INSERT INTO Usuarios (nome, email, senha, tipo)
+      VALUES (?, ?, ?, ?)
+    `;
+
+    await pool.query(query, [nome, email, senhaCriptografada, tipo]);
 
     res.status(201).json({ mensagem: 'Usuário criado com sucesso!' });
   } catch (error) {
@@ -33,10 +30,9 @@ exports.cadastrarUsuario = async (req, res) => {
 exports.listarTodos = async (req, res) => {
   try {
     const pool = await db.connectToDatabase();
-    const result = await pool.request()
-      .query('SELECT id, nome, email, tipo, criado_em FROM Usuarios');
+    const [rows] = await pool.query('SELECT id, nome, email, tipo, criado_em FROM Usuarios');
 
-    res.json(result.recordset);
+    res.json(rows);
   } catch (error) {
     res.status(500).json({ erro: 'Erro ao listar usuários', detalhe: error.message });
   }
@@ -53,20 +49,19 @@ exports.atualizarUsuario = async (req, res) => {
 
     let query = `
       UPDATE Usuarios
-      SET nome = @nome, email = @email, tipo = @tipo
-      ${senha ? ', senha = @senha' : ''}
-      WHERE id = @id
+      SET nome = ?, email = ?, tipo = ?
     `;
+    const values = [nome, email, tipo];
 
-    const request = pool.request()
-      .input('id', id)
-      .input('nome', nome)
-      .input('email', email)
-      .input('tipo', tipo);
+    if (senhaCriptografada) {
+      query += `, senha = ?`;
+      values.push(senhaCriptografada);
+    }
 
-    if (senhaCriptografada) request.input('senha', senhaCriptografada);
+    query += ` WHERE id = ?`;
+    values.push(id);
 
-    await request.query(query);
+    await pool.query(query, values);
 
     res.json({ mensagem: 'Usuário atualizado com sucesso!' });
   } catch (error) {
@@ -80,10 +75,7 @@ exports.excluirUsuario = async (req, res) => {
 
   try {
     const pool = await db.connectToDatabase();
-
-    await pool.request()
-      .input('id', id)
-      .query('DELETE FROM Usuarios WHERE id = @id');
+    await pool.query('DELETE FROM Usuarios WHERE id = ?', [id]);
 
     res.json({ mensagem: 'Usuário excluído com sucesso!' });
   } catch (error) {

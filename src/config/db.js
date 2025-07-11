@@ -1,26 +1,24 @@
-const sql = require('mssql');
+const mysql = require('mysql2/promise');
 require('dotenv').config();
 
-const config = {
-  server: process.env.DB_SERVER,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  port: parseInt(process.env.DB_PORT),
-  options: {
-    encrypt: true,
-    trustServerCertificate: false
+const connectToDatabase = async () => {
+  try {
+    const pool = await mysql.createPool({
+      host: process.env.DB_HOST || 'localhost',
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD || '',
+      database: process.env.DB_NAME || 'plataforma_servicos',
+      port: parseInt(process.env.DB_PORT) || 3306,
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0
+    });
+
+    return pool;
+  } catch (err) {
+    console.error('Erro ao conectar no MySQL:', err);
+    throw err;
   }
 };
 
-async function connectToDatabase() {
-  try {
-    const pool = await sql.connect(config);
-    return pool;
-  } catch (err) {
-    console.error('Erro ao conectar no SQL Server:', err);
-    throw err;
-  }
-}
-
-module.exports = { connectToDatabase, sql };
+module.exports = { connectToDatabase };

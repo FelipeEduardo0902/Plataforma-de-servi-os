@@ -27,34 +27,36 @@ module.exports = {
       telefoneFormatado = formatarTelefone(telefoneLimpo);
     }
 
-    await pool.request()
-      .input("titulo", titulo)
-      .input("descricao", descricao)
-      .input("categoria", categoria)
-      .input("cidade", cidade)
-      .input("contato", telefoneFormatado)
-      .input("imagem", imagem)
-      .input("prestador_id", prestador_id)
-      .input("is_categoria", is_categoria)
-      .query(`
-        INSERT INTO Servicos (titulo, descricao, categoria, cidade, contato, imagem, prestador_id, is_categoria)
-        VALUES (@titulo, @descricao, @categoria, @cidade, @contato, @imagem, @prestador_id, @is_categoria)
-      `);
+    const query = `
+      INSERT INTO Servicos (titulo, descricao, categoria, cidade, contato, imagem, prestador_id, is_categoria)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    await pool.query(query, [
+      titulo,
+      descricao,
+      categoria,
+      cidade,
+      telefoneFormatado,
+      imagem,
+      prestador_id,
+      is_categoria
+    ]);
   },
 
   listarServicos: async () => {
     const pool = await db.connectToDatabase();
-    const result = await pool.request()
-      .query('SELECT * FROM Servicos WHERE is_categoria = 0');
-    return result.recordset;
+    const [rows] = await pool.query('SELECT * FROM Servicos WHERE is_categoria = 0');
+    return rows;
   },
 
   listarServicosPorPrestador: async (prestador_id) => {
     const pool = await db.connectToDatabase();
-    const result = await pool.request()
-      .input('prestador_id', prestador_id)
-      .query('SELECT * FROM Servicos WHERE prestador_id = @prestador_id AND is_categoria = 0');
-    return result.recordset;
+    const [rows] = await pool.query(
+      'SELECT * FROM Servicos WHERE prestador_id = ? AND is_categoria = 0',
+      [prestador_id]
+    );
+    return rows;
   },
 
   atualizarServico: async (id, { titulo, descricao, categoria, cidade, contato, imagem }) => {
@@ -71,36 +73,26 @@ module.exports = {
 
     let query = `
       UPDATE Servicos
-      SET titulo = @titulo, descricao = @descricao, categoria = @categoria,
-          cidade = @cidade, contato = @contato
+      SET titulo = ?, descricao = ?, categoria = ?, cidade = ?, contato = ?
     `;
-    if (imagem) {
-      query += `, imagem = @imagem`;
-    }
-    query += ` WHERE id = @id`;
-
-    const request = pool.request()
-      .input('id', id)
-      .input('titulo', titulo)
-      .input('descricao', descricao)
-      .input('categoria', categoria)
-      .input('cidade', cidade)
-      .input('contato', telefoneFormatado);
+    const params = [titulo, descricao, categoria, cidade, telefoneFormatado];
 
     if (imagem) {
-      request.input('imagem', imagem);
+      query += `, imagem = ?`;
+      params.push(imagem);
     }
 
-    await request.query(query);
+    query += ` WHERE id = ?`;
+    params.push(id);
+
+    await pool.query(query, params);
   },
 
   excluirServico: async (id) => {
     const pool = await db.connectToDatabase();
-    const result = await pool.request()
-      .input('id', id)
-      .query('DELETE FROM Servicos WHERE id = @id');
+    const [result] = await pool.query('DELETE FROM Servicos WHERE id = ?', [id]);
 
-    if (result.rowsAffected[0] === 0) {
+    if (result.affectedRows === 0) {
       throw new Error('Serviço não encontrado ou já foi excluído.');
     }
   }

@@ -1,11 +1,7 @@
 const servicoService = require('../services/servico.service');
 const db = require('../config/db');
 
-// Helper para extrair campos do req.body de forma segura (especialmente se usar multer)
 function extrairCamposDoBody(req) {
-  // Se multer está processando multipart/form-data, req.body será texto e req.file a imagem
-  // Caso o frontend envie JSON, req.body estará diretamente disponível.
-  // Aqui vamos garantir que sempre funcione
   return {
     titulo: req.body.titulo || '',
     descricao: req.body.descricao || '',
@@ -51,7 +47,6 @@ exports.listarServicos = async (req, res) => {
 exports.listarServicosPrestador = async (req, res) => {
   try {
     const prestadorId = req.usuario.id;
-    console.log('Listando serviços do prestador:', prestadorId);
     const servicos = await servicoService.listarServicosPorPrestador(prestadorId);
     res.json(servicos);
   } catch (error) {
@@ -66,31 +61,20 @@ exports.atualizarServico = async (req, res) => {
     const prestadorIdLogado = req.usuario.id;
     const tipoUsuario = req.usuario.tipo;
 
-    // Extrair campos do corpo da requisição de forma segura
     const { titulo, descricao, categoria, cidade, contato } = extrairCamposDoBody(req);
     const imagem = req.file ? req.file.filename : null;
 
-    console.log('Usuário logado:', req.usuario);
-    console.log('ID do serviço a ser atualizado:', id);
-
     const pool = await db.connectToDatabase();
 
-    // Busca serviço para verificar dono
-    const resultado = await pool.request()
-      .input('id', id)
-      .query('SELECT prestador_id FROM Servicos WHERE id = @id');
+    const [rows] = await pool.query('SELECT prestador_id FROM Servicos WHERE id = ?', [id]);
 
-    if (resultado.recordset.length === 0) {
-      console.log('Serviço não encontrado para atualização. ID:', id);
+    if (rows.length === 0) {
       return res.status(404).json({ erro: 'Serviço não encontrado.' });
     }
 
-    const donoServico = resultado.recordset[0].prestador_id;
-    console.log('Dono do serviço:', donoServico);
+    const donoServico = rows[0].prestador_id;
 
-    // Só admin ou dono pode atualizar (conversão para string para evitar problema de tipo)
     if (tipoUsuario !== 'admin' && donoServico.toString() !== prestadorIdLogado.toString()) {
-      console.log('Permissão negada para atualizar. Usuário:', prestadorIdLogado, 'Dono do serviço:', donoServico);
       return res.status(403).json({ erro: 'Você não tem permissão para atualizar este serviço.' });
     }
 
@@ -116,27 +100,17 @@ exports.excluirServico = async (req, res) => {
     const prestadorIdLogado = req.usuario.id;
     const tipoUsuario = req.usuario.tipo;
 
-    console.log('Usuário logado:', req.usuario);
-    console.log('ID do serviço a ser excluído:', id);
-
     const pool = await db.connectToDatabase();
 
-    // Busca serviço para verificar dono
-    const resultado = await pool.request()
-      .input('id', id)
-      .query('SELECT prestador_id FROM Servicos WHERE id = @id');
+    const [rows] = await pool.query('SELECT prestador_id FROM Servicos WHERE id = ?', [id]);
 
-    if (resultado.recordset.length === 0) {
-      console.log('Serviço não encontrado para exclusão. ID:', id);
+    if (rows.length === 0) {
       return res.status(404).json({ erro: 'Serviço não encontrado.' });
     }
 
-    const donoServico = resultado.recordset[0].prestador_id;
-    console.log('Dono do serviço:', donoServico);
+    const donoServico = rows[0].prestador_id;
 
-    // Só admin ou dono pode excluir
     if (tipoUsuario !== 'admin' && donoServico.toString() !== prestadorIdLogado.toString()) {
-      console.log('Permissão negada para excluir. Usuário:', prestadorIdLogado, 'Dono do serviço:', donoServico);
       return res.status(403).json({ erro: 'Você não tem permissão para excluir este serviço.' });
     }
 
